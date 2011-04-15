@@ -3,15 +3,23 @@ NGSfy 0.01 (Nov 2010) README file
 INTRODUCTION
 ============
 
-The NGSfy tool is designed to process DNA fasta files to generate typical output files as obtained by new "second generation sequencing" (or NGS) platforms. Currently it supports 454/Roche and Illumina/Solexa platforms and delivers SFF and fastq files respectively.
+The NGSfy tool is designed to process DNA fasta files to generate typical output files as obtained by new "second generation sequencing" (or NGS) platforms. It supports 454/Roche and Illumina/Solexa platforms and delivers SFF and fastq files respectively.
 
 It is also able to introduce typical NGS platform errors. For the 454 mode the errors are simulated as published in several papers (Margulies M et al 2005 Nature 437:376, Richter DC et al 2008 PLoS One 3(10):e3373, Korbel JO et al 2009 Genome Biol 10(2):R23). For the Illumina/Solexa mode the model is based on Korbel JO et al 2009 Genome Biol 10(2):R23 and Dohm JC et al 2008 NAR 36(16):e105.
 
-This is an "alpha" software. Current binaries should be used with caution. Contact me directly if you want to use it or contribute with testing/code/discussion/data/whatever
-
-I expect to deliver a stable version and its complete documentation in the following weeks.
+This is an "alpha" software. Contact me directly if you want to use it or contribute with testing/code/discussion/data/whatever
 
 To see current options run
 $ ./ngsfy [-h|--help]
 
+
+INSTALLATION
+============
+
+You need ocaml installed in your machine
+
+http://caml.inria.fr/ocaml/
+
+Once installed, download NGSfy, untar, cd into it and make.
+If you have any problem installing, please contact me (emepyc [AT] gmail.com)
 

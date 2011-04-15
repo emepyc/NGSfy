@@ -135,7 +135,7 @@ let lognormal x mu sd =
   (1./.(x *. sd')) *. exp (-.(Gsl_math.pow_int((log x) -. mu') 2) /. (2. *. sd' *. sd'))
 
 let probSN x n =
-  if n = 1 then
+  if n = 0 then
     lognormal x 0.2 0.1
   else
     let mu = (float_of_int n) in
@@ -149,12 +149,12 @@ let probNS x l =
   let pn  = probN l in
   let ps = 
     let rec aux n acc =
-      if n > 400 then acc
+      if n > (l + 5) then acc   (* Arbitrary limit... max homopolymer length *)
       else
         let psn' = probSN x n in
         let pn'  = probN n in
         aux (n+1) (acc +. (psn' *. pn'))
-    in aux 2 ((probSN x 1) *. 0.25)
+    in aux 1 (probSN x 0)
   in 
   psn *. pn /. ps
 
@@ -162,65 +162,6 @@ let prob2phred p =
   let phred = int_of_float (floor (-.10. *. (log10 (1. -. p)))) in
     if phred > 40 then 40
     else phred
-
-let appseq ctrl slt =
-  let lim = List.fold_left (fun acc (n,v) -> acc + n) 0 slt in
-  let lim = lim * 2 in
-  let lim' = String.length ctrl in 
-  let vals = Array.init lim' (fun x -> (randomVal 0)/.10.) in
-  let quals = Array.make lim 0 in
-  let indxs = Array.make lim 0 in
-  let s = String.create lim in
-  let shifted = ref 0 in
-  let spos = ref 0 in
-  let rec aux cpos seqlst =
-    match seqlst with
-    | (n,v)::tl ->
-        begin
-(*          print_int n;print_char v;print_string ":"; *)
-          try 
-          let rv = randomVal (if v=ctrl.[cpos] then n else 0) in
-          let ppoint = getRange rv (cutpoints) in
-(*        (print_endline ((string_of_int !spos)^" "^(String.make 1 v)^" VS "^(String.make 1 ctrl.[cpos])^" - "^(string_of_int ppoint)); *)
-          let p = probNS rv n in
-          let q = prob2phred p in
-          begin
-            vals.(cpos) <- rv;
-            aux (cpos + 1) (
-            if ppoint > 0 && q != 0 then (* Tenemos valor *)
-              begin
-(*                print_int ppoint;print_char ctrl.[cpos];print_endline ""; *)
-                String.blit (String.make ppoint ctrl.[cpos]) 0 s !spos ppoint;
-                Array.blit (Array.create ppoint q) 0 quals !spos ppoint;
-                indxs.(!spos) <- !shifted + 1;
-                if ppoint > 1 then Array.blit (Array.create ppoint 0) 0 indxs (!spos+1) (ppoint-1)
-                else ();
-                shifted := 0;
-                spos:=!spos+ppoint;
-                tl
-              end
-            else
-              if !shifted = 2 then
-                begin
-                  s.[!spos] <- 'N';
-                  quals.(!spos) <- 0;
-                  indxs.(!spos) <- (!shifted+1);
-                  shifted := 0;
-                  spos:=!spos+1;
-                  tl
-                end
-              else
-                begin
-                  shifted := !shifted + 1;
-                  seqlst
-                end)
-          end
-        with
-        | Invalid_argument m -> print_endline ("Clipping sequence at pos "^(string_of_int !spos)); ((String.sub s 0 !spos),(Array.sub quals 0 !spos),(Array.sub indxs 0 !spos),vals)
-        end
-    | [] -> ((String.sub s 0 !spos),(Array.sub quals 0 !spos),(Array.sub indxs 0 !spos),vals)
-  in aux 0 slt
-    
 
 let appseq2 ctrl slt =
   let vals = Array.init (String.length ctrl) (fun x -> (randomVal 0)/.10.) in
@@ -231,21 +172,30 @@ let appseq2 ctrl slt =
           try
             let rv = randomVal (if v=ctrl.[cpos] then n else 0) in
             let ppoint = getRange rv cutpoints in
-            let p = probNS rv ppoint in (* WAS n!!! (probNS rv n) *)
+            let p = probNS rv ppoint in
             let q = prob2phred p in
 (*             (print_endline ( (string_of_int n) ^ (String.make 1 v) ^ " => " ^ (string_of_float rv) ^ (String.make 1 ctrl.[cpos]) ^ " : " ^ (string_of_int ppoint) ^ " " ^ (string_of_int q)); *)
             vals.(cpos) <- rv;
+	    (* ( print_char '\n';print_string "v           : ";print_char v; print_char '\n'; *)
+	    (*   print_string "n           : ";print_int n; print_char '\n'; *)
+	    (*   print_string "ppoint      : ";print_int ppoint; print_char '\n'; *)
+	    (*   print_string "ctrl.[cpos] : ";print_char ctrl.[cpos]; print_char '\n'; *)
+	    (*   print_string "rv          : ";print_float rv; print_char '\n'; *)
+	    (*   print_string "p           : ";print_float p; print_char '\n'; *)
+	    (*   print_string "q           : ";print_int q; print_char '\n'; *)
+	    (*   print_string "shifted     : ";print_int shifted; print_char '\n'; *)
             match (ppoint,q) with
-            | (0,_)
-            | (_,0) -> (* What happens if ppoint>1 and q=0?? Here, only one 'N' will be inserted! *)
+	      | (n,0) when n > 0 -> aux (cpos+1) tl ((n,10)::quals) ((n-1,0)::(1,(shifted+1))::indxs) ((n,v)::s) 0 
+              | (0,_)
+              | (_,0) -> (* What happens if ppoint>1 and q=0?? Here, only one 'N' will be inserted! *)
                 if shifted = 2 then
-(*                  (print_string "ERR: "; print_int n;print_char v;print_char ':';print_char 'N';print_char '\n'; *)
-                  aux (cpos+1) tl ((1,0)::quals) ((1,(shifted+1))::indxs) ((1,'N')::s) 0
+		  aux (cpos+1) tl ((1,0)::quals) ((1,(shifted+1))::indxs) ((1,'N')::s) 0
                 else aux (cpos+1) seqlst quals indxs s (shifted+1)
             | (cutp,_) ->
-                if cutp != n then print_endline ("ERR: " ^ (string_of_int n) ^ (String.make 1 v) ^ "x" ^ (string_of_int cutp) ^ (String.make 1 ctrl.[cpos]) ) else ();
+                if cutp != n || ctrl.[cpos] != v then print_endline ("ERR: " ^ (string_of_int n) ^ (String.make 1 v) ^ "x" ^ (string_of_int cutp) ^ (String.make 1 ctrl.[cpos]) ) else ();
 (*                aux (cpos+1) tl ((cutp,q)::quals) ((cutp,(shifted+1))::indxs) ((cutp,v)::s) 0 *)
-                aux (cpos+1) tl ((cutp,q)::quals) ((cutp-1,0)::(1,(shifted+1))::indxs) ((cutp,v)::s) 0 (* Lists grow in reverse *)
+(*              (print_string "INSERTING: "; print_char v; print_char '\n'; *)
+		 aux (cpos+1) tl ((cutp,q)::quals) ((cutp-1,0)::(1,(shifted+1))::indxs) ((cutp,v)::s) 0 (*)) (* Lists grow in reverse *)*)
           with
           | Invalid_argument m ->
               print_endline ("Clipping sequence");

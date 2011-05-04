@@ -170,13 +170,13 @@ let appseq2 ctrl slt =
     | (n,v)::tl ->
         begin
           try
-            let rv = randomVal (if v=ctrl.[cpos] then n else 0) in
-            let ppoint = getRange rv cutpoints in
-            let p = probNS rv ppoint in
-            let q = prob2phred p in
-(*             (print_endline ( (string_of_int n) ^ (String.make 1 v) ^ " => " ^ (string_of_float rv) ^ (String.make 1 ctrl.[cpos]) ^ " : " ^ (string_of_int ppoint) ^ " " ^ (string_of_int q)); *)
+            let rv = randomVal (if v=ctrl.[cpos] then n else 0) in  (* The "signal"                  *)
+            let ppoint = getRange rv cutpoints in                   (* The interpreted signal        *)
+            let p = probNS rv ppoint in                             (* The probability of the signal *)
+            let q = prob2phred p in                                 (* The associated q value        *)
+(*            (print_endline ( (string_of_int n) ^ (String.make 1 v) ^ " => " ^ (string_of_float rv) ^ (String.make 1 ctrl.[cpos]) ^ " : " ^ (string_of_int ppoint) ^ " " ^ (string_of_int q));  *)
             vals.(cpos) <- rv;
-	    (* ( print_char '\n';print_string "v           : ";print_char v; print_char '\n'; *)
+	    (* ( print_char '\n';print_string "v           : ";print_char v; print_char '\n';  *)
 	    (*   print_string "n           : ";print_int n; print_char '\n'; *)
 	    (*   print_string "ppoint      : ";print_int ppoint; print_char '\n'; *)
 	    (*   print_string "ctrl.[cpos] : ";print_char ctrl.[cpos]; print_char '\n'; *)
@@ -191,11 +191,13 @@ let appseq2 ctrl slt =
                 if shifted = 2 then
 		  aux (cpos+1) tl ((1,0)::quals) ((1,(shifted+1))::indxs) ((1,'N')::s) 0
                 else aux (cpos+1) seqlst quals indxs s (shifted+1)
-            | (cutp,_) ->
-                if cutp != n || ctrl.[cpos] != v then print_endline ("ERR: " ^ (string_of_int n) ^ (String.make 1 v) ^ "x" ^ (string_of_int cutp) ^ (String.make 1 ctrl.[cpos]) ) else ();
+              | (cutp,_) ->
+		if cutp == 1 && n > 1 && ctrl.[cpos] != v then (print_endline ("ERR: " ^ (string_of_int 1) ^ (String.make 1 v) ^ "x" ^ (string_of_int cutp) ^ (String.make 1 ctrl.[cpos]) );
+		aux (cpos+1) (((n-1),v)::tl) ((1,q)::quals) ((0,0)::(1,(shifted+1))::indxs) ((1,v)::s) 0; () )
+                else if cutp != n || ctrl.[cpos] != v then print_endline ("ERR: " ^ (string_of_int n) ^ (String.make 1 v) ^ "x" ^ (string_of_int cutp) ^ (String.make 1 ctrl.[cpos]) ) else ();
 (*                aux (cpos+1) tl ((cutp,q)::quals) ((cutp,(shifted+1))::indxs) ((cutp,v)::s) 0 *)
 (*              (print_string "INSERTING: "; print_char v; print_char '\n'; *)
-		 aux (cpos+1) tl ((cutp,q)::quals) ((cutp-1,0)::(1,(shifted+1))::indxs) ((cutp,v)::s) 0 (*)) (* Lists grow in reverse *)*)
+		 aux (cpos+1) tl ((cutp,q)::quals) ((cutp-1,0)::(1,(shifted+1))::indxs) ((cutp,v)::s) 0  (* )) (* Lists grow in reverse *)*)  
           with
           | Invalid_argument m ->
               print_endline ("Clipping sequence");

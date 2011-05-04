@@ -5,7 +5,7 @@ OCAMLFIND = ocamlfind
 OCAMLOPT = $(OCAMLFIND) ocamlopt $(COMMONOPTS)
 OCAMLDEP = $(OCAMLFIND) ocamldep $(COMMONOPTS)
 OCAMLMKLIB = ocamlmklib -custom
-OCAMLC= ocamlc.opt
+OCAMLC= ocamlc
 
 native: myString.cmxa
 bytecode: myString.cma

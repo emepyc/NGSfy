@@ -7,6 +7,8 @@ OCAMLDEP = $(OCAMLFIND) ocamldep $(COMMONOPTS)
 OCAMLMKLIB = ocamlmklib -custom
 OCAMLC= ocamlc
 
+STUDDIR = "./studlibs"
+
 native: myString.cmxa
 bytecode: myString.cma
 
@@ -15,6 +17,7 @@ strings_stub.o: strings_stub.c
 
 lib_wrap_stubs.a: strings_stub.o
 	$(OCAMLMKLIB) -o _wrap_stubs  $<
+	mkdir -p $(STUDDIR)
 	mv lib_wrap_stubs.a studlibs/
 
 myString.cmi: myString.mli
